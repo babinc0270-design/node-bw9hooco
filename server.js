@@ -5,42 +5,41 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+// Render automatically assigns a PORT, so we listen to theirs first, or fallback to 3000 locally
+const PORT = process.env.PORT || 3000; 
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('public')); // Serves your index.html and village image
 
 // API Endpoint
 app.post('/api/download', async (req, res) => {
     const { url } = req.body;
 
     if (!url || !url.includes('instagram.com/reel')) {
-        return res.status(400).json({ error: 'Please provide a valid Instagram Reel URL' });
+        return res.status(400).json({ error: 'Please provide a valid Instagram Reel URL.' });
     }
 
     try {
-        // Updated to the new EaseApi endpoint
         const options = {
             method: 'GET',
             url: 'https://instagram-reels-downloader-api.p.rapidapi.com/download', 
             params: { url: url },
             headers: {
                 'X-RapidAPI-Key': process.env.RAPIDAPI_KEY, 
-                // Updated to match the new Host
                 'X-RapidAPI-Host': 'instagram-reels-downloader-api.p.rapidapi.com'
             }
         };
 
         const response = await axios.request(options);
         
-        // --- THIS IS THE CRITICAL FIX FROM YOUR SCREENSHOT ---
-        // We look inside the "medias" array for the first item's "url"
-        const videoUrl = response.data.medias[0].url; 
+        // The magical fix: accessing the first item in the array, then the medias array
+        const videoUrl = response.data[0]?.medias[0]?.url; 
 
         if (!videoUrl) {
-            return res.status(404).json({ error: 'Video URL not found. The reel might be private or deleted.' });
+            console.log("RapidAPI returned:", response.data); // Logs to Render so you can debug if it fails
+            return res.status(404).json({ error: 'Video not found. The reel might be private or deleted.' });
         }
 
         res.json({ success: true, videoUrl: videoUrl });
@@ -53,5 +52,5 @@ app.post('/api/download', async (req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
