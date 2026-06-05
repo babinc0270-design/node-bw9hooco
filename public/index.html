@@ -33,14 +33,9 @@
             position: absolute;
             top: -5%; left: -5%;
             width: 110%; height: 110%;
-            
-            /* IMPORTANT: This points to the image you uploaded to the public folder! */
+            /* Change village.jpg to village.png if your file is a PNG! */
             background: url('village.jpg') center/cover no-repeat;
-            
-            /* Dims the image slightly so your white card is easy to read */
             filter: brightness(0.7) contrast(1.1);
-            
-            /* Slow, cinematic panning animation */
             animation: kenBurns 30s infinite alternate ease-in-out;
         }
 
@@ -67,7 +62,6 @@
             80% { opacity: 0.7; }
             100% { opacity: 0; transform: translateY(-150px) scale(1.5); }
         }
-        /* ----------------------------------------- */
 
         /* Header */
         header {
@@ -217,27 +211,22 @@
     </footer>
 
     <script>
-        // Generate Magical Fireflies over the village
         function createFireflies() {
             for (let i = 0; i < 30; i++) {
                 let firefly = document.createElement('div');
                 firefly.className = 'firefly';
-                
                 firefly.style.left = Math.random() * 100 + 'vw';
                 firefly.style.top = Math.random() * 100 + 'vh';
                 firefly.style.animationDuration = (Math.random() * 6 + 4) + 's';
                 firefly.style.animationDelay = (Math.random() * 5) + 's';
-                
                 let size = Math.random() * 3 + 2;
                 firefly.style.width = size + 'px';
                 firefly.style.height = size + 'px';
-                
                 document.body.appendChild(firefly);
             }
         }
         createFireflies();
 
-        // Fetch Video Logic
         async function fetchVideo() {
             const urlInput = document.getElementById('reelUrl').value;
             const resultContent = document.getElementById('resultContent');
@@ -268,8 +257,8 @@
                     resultContent.innerHTML = `
                         <p class="success">Video caught successfully! 🎉</p>
                         <video controls autoplay src="${data.videoUrl}"></video>
-                        <a href="${data.videoUrl}" target="_blank" rel="noopener noreferrer">
-                            <button class="dl-btn">Open Direct Video Link</button>
+                        <a href="${data.videoUrl}" target="_blank" rel="noopener noreferrer" download>
+                            <button class="dl-btn">Download / Open Link</button>
                         </a>
                     `;
                 } else {
