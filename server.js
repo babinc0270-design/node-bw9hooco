@@ -5,20 +5,21 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-// Render automatically assigns a PORT, so we listen to theirs first, or fallback to 3000 locally
+// Render automatically assigns a PORT env variable, so we listen to that, or fallback to 3000 locally
 const PORT = process.env.PORT || 3000; 
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // Serves your index.html and village image
+app.use(express.static('public')); // Serves your index.html and village background image
 
 // API Endpoint
 app.post('/api/download', async (req, res) => {
     const { url } = req.body;
 
-    if (!url || !url.includes('instagram.com/reel')) {
-        return res.status(400).json({ error: 'Please provide a valid Instagram Reel URL.' });
+    // Basic validation to check if a URL is provided and looks like an Instagram link
+    if (!url || !url.includes('instagram.com')) {
+        return res.status(400).json({ error: 'Please provide a valid Instagram URL.' });
     }
 
     try {
@@ -32,16 +33,20 @@ app.post('/api/download', async (req, res) => {
             }
         };
 
+        // Send request to RapidAPI
         const response = await axios.request(options);
         
-        // The magical fix: accessing the first item in the array, then the medias array
-        const videoUrl = response.data[0]?.medias[0]?.url; 
+        // Extract the video URL safely using optional chaining (?.)
+        // This targets the first item inside the 'medias' array directly from the response object
+        const videoUrl = response.data?.medias?.[0]?.url; 
 
         if (!videoUrl) {
-            console.log("RapidAPI returned:", response.data); // Logs to Render so you can debug if it fails
-            return res.status(404).json({ error: 'Video not found. The reel might be private or deleted.' });
+            // Logs the unexpected structure to your Render console so you can see what the API returned
+            console.log("RapidAPI returned data, but video URL structure was missing:", response.data); 
+            return res.status(404).json({ error: 'Video not found. The reel might be private, deleted, or the link is invalid.' });
         }
 
+        // Return the extracted direct video link back to your frontend
         res.json({ success: true, videoUrl: videoUrl });
 
     } catch (error) {
