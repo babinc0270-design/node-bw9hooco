@@ -21,19 +21,13 @@ app.post('/api/download', async (req, res) => {
     }
 
     try {
-        // --- THE URL SANITIZER FIX ---
-        // Splits the string at the '?' and takes the first part, completely removing tracking junk
+        // Sanitize URL to remove tracking junk
         const cleanUrl = url.split('?')[0]; 
         
-        console.log("=== URL SANITIZATION ===");
-        console.log("Raw received URL:", url);
-        console.log("Cleaned URL sent to API:", cleanUrl);
-        console.log("========================");
-
         const options = {
             method: 'GET',
             url: 'https://instagram-reels-downloader-api.p.rapidapi.com/download', 
-            params: { url: cleanUrl }, // Passing the cleaned URL here
+            params: { url: cleanUrl },
             headers: {
                 'X-RapidAPI-Key': process.env.RAPIDAPI_KEY, 
                 'X-RapidAPI-Host': 'instagram-reels-downloader-api.p.rapidapi.com'
@@ -41,43 +35,39 @@ app.post('/api/download', async (req, res) => {
         };
 
         const response = await axios.request(options);
-        const data = response.data;
         
-        console.log("=== RAPIDAPI RAW RESPONSE ===");
-        console.log(JSON.stringify(data, null, 2));
-        console.log("=============================");
+        // This is the raw JSON from your screenshot
+        const apiResponse = response.data; 
+        
+        // THIS IS THE FIX: The API wraps all the good stuff inside a second 'data' object!
+        const videoData = apiResponse.data; 
 
         let videoUrl = null;
 
-        // Cascade extraction paths
-        if (data?.medias && Array.isArray(data.medias) && data.medias.length > 0) {
-            videoUrl = data.medias[0]?.url;
+        // Now we look inside videoData to find the medias array
+        if (videoData?.medias && Array.isArray(videoData.medias) && videoData.medias.length > 0) {
+            videoUrl = videoData.medias[0].url;
         } 
-        else if (Array.isArray(data) && data[0]?.medias && data[0].medias.length > 0) {
-            videoUrl = data[0].medias[0]?.url;
-        } 
-        else if (data?.video_url) {
-            videoUrl = data.video_url;
-        } 
-        else if (data?.url) {
-            videoUrl = data.url;
+        else if (videoData?.video_url) {
+            videoUrl = videoData.video_url;
         }
 
         if (!videoUrl) {
+            console.log("Failed to find URL in this structure:", apiResponse);
             return res.status(404).json({ 
                 error: 'Video link not found in API data. Check Render Logs to see response.' 
             });
         }
 
+        // Send the found URL back to the frontend!
         res.json({ success: true, videoUrl: videoUrl });
 
     } catch (error) {
         console.error('API Error Details:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Failed to fetch the video. The API might be down or your key is invalid.' });
+        res.status(500).json({ error: 'Failed to fetch the video. The API might be down.' });
     }
 });
 
-// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
